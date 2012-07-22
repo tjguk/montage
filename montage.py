@@ -37,7 +37,7 @@ def copy_with_rename(copy_from, copy_to):
 
 def copy_images(from_dir, images_dir):
     for jpg in from_dir.flat("*.jpg"):
-        print jpg
+        print jpg.relative_to(from_dir)
         metadata = pyexiv2.ImageMetadata(jpg)
         metadata.read()
         timestamp_metadata = metadata.get('Exif.Image.DateTime', None)
@@ -46,7 +46,7 @@ def copy_images(from_dir, images_dir):
         else:
             timestamp = timestamp_metadata.value
         to_filepath = images_dir + "%s.jpg" % timestamp.strftime("%Y%m%d-%H%M%S")
-        print copy_with_rename(jpg, to_filepath)
+        copy_with_rename(jpg, to_filepath)
 
 def generate_thumbnails(images_dir):
     raise NotImplementedError
@@ -54,7 +54,8 @@ def generate_thumbnails(images_dir):
 def generate_html(images_dir, to_html):
     raise NotImplementedError
 
-def main(from_dirpath, to_htmlpath="montage.html", images_dirpath="images"):
+FROM_DIRPATH = r"\\handel\public\westpark-club\images\2009"
+def main(from_dirpath=FROM_DIRPATH, to_htmlpath="montage.html", images_dirpath="images"):
     from_dir = fs.dir(from_dirpath)
     to_html = fs.file(to_htmlpath)
     images_dir = fs.Dir(images_dirpath).create()
