@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block body %}
+    <h1>{{ title }}</h1>
+    {% for month, items in images|groupby("month") %}
+        <h2>{{month}}</h2>
+        {% for item in items %}
+            <a href="{{item.image.base}}.html"><img src="images/thumbnails/{{item.image.base}}.jpg"></a>
+        {% endfor %}
+    {% endfor %}
+{% endblock %}
