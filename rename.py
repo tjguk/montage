@@ -2,10 +2,12 @@ import os, sys
 import itertools
 
 import pyexiv2
+from PIL import Image
+
 from winsys import fs
 
 def copy_with_rename(copy_from, copy_to):
-  if fs.entry(copy_to):
+  if copy_to:
     if copy_from.equal_contents (copy_to):
       return
     for i in itertools.count(1):
