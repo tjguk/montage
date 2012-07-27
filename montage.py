@@ -7,18 +7,11 @@ import pyexiv2
 from PIL import Image
 from winsys import fs
 
-def copy_with_rename(copy_from, copy_to):
-    if copy_to:
-        if copy_from.equal_contents(copy_to):
-            return
-        for i in itertools.count(1):
-            new_copy_to = copy_to.changed(base="%s.%d" % (copy_to.base, i))
-            print "Trying", new_copy_to
-            if not new_copy_to:
-                copy_to = new_copy_to
-                break
-
-    return copy_from.copy(copy_to)
+def copy_with_resize(jpg, filepath, width=1024):
+    image = Image.open(jpg)
+    image.thumbnail((width, width), Image.ANTIALIAS)
+    image.save(filepath, "JPEG")
+    return filepath
 
 def copy_images(from_dir, images_dir, from_date, to_date):
     for jpg in from_dir.flat("*.jpg"):
@@ -32,7 +25,7 @@ def copy_images(from_dir, images_dir, from_date, to_date):
             timestamp = timestamp_metadata.value
         if from_date <= timestamp.date() <= to_date:
             to_filepath = images_dir + "%s.jpg" % timestamp.strftime("%Y%m%d-%H%M%S")
-            target = copy_with_rename(jpg, to_filepath)
+            target = copy_with_resize(jpg, to_filepath)
             if target: print "=>", target.filename
 
 def generate_thumbnails(images_dir):
@@ -56,6 +49,16 @@ def generate_thumbnails(images_dir):
         print thumbnails_dirpath + jpg.filename
         image.save(thumbnails_dirpath + jpg.filename, "JPEG")
 
+def ordinal_day(day):
+    if day in (1, 21, 31):
+        return "%dst" % day
+    elif day in (2, 22):
+        return "%dnd" % day
+    elif day in (3, 23):
+        return "%drd" % day
+    else:
+        return "%dth" % day
+
 def generate_html(root_dir):
     env = jinja2.Environment(loader=jinja2.FileSystemLoader("templates/"))
     gallery_template = env.get_template("gallery.html")
@@ -68,7 +71,13 @@ def generate_html(root_dir):
             picture_file.write(picture_template.render(image=jpg))
         name = jpg.name
         jpg_date = datetime.date(int(name[:4]), int(name[4:6]), int(name[6:8]))
-        images.append(dict(month=jpg_date.strftime("%b %Y"), image=jpg))
+        images.append(dict(
+            yyyymmdd=name[:8],
+            yyyymm=name[:6],
+            month=jpg_date.strftime("%b %Y"),
+            date=ordinal_day(jpg_date.day),
+            image=jpg
+        ))
 
     gallery_html = gallery_template.render(
         title="Westpark Through the Year",
@@ -77,7 +86,7 @@ def generate_html(root_dir):
     with open(montage_filepath, "wb") as html_file:
         html_file.write(gallery_html)
 
-FROM_DIRPATH = r"\\handel\public\westpark-club\images\2011\2011-Nov Garden"
+FROM_DIRPATH = "originals"
 IMAGES_RELPATH = "images"
 FROM_DATE = datetime.date(2011, 9, 1)
 TO_DATE = datetime.date(2012, 7, 31)
@@ -90,6 +99,7 @@ def main(from_dirpath=FROM_DIRPATH, root_dirpath="web"):
     copy_images(from_dir, images_dir, FROM_DATE, TO_DATE)
     generate_thumbnails(images_dir)
     generate_html(root_dir)
+    print "Done!"
 
 if __name__ == '__main__':
   main(*sys.argv[1:])
